@@ -979,73 +979,76 @@ const NHSShiftTracker = () => {
   };
 
   // Modern Modal - Bottom Sheet on Mobile
-  const Modal = () => {
+  // MOBILE-OPTIMIZED MODAL - Replace your Modal component with this
+
+    const Modal = () => {
     const isTransfer = editingShift?.transferFrom;
     
     const [formData, setFormData] = useState(() => {
-      if (editingShift) {
+        if (editingShift) {
         return {
-          type: editingShift.type || modalType,
-          shiftType: editingShift.shiftType || 'day',
-          leaveType: editingShift.leaveType || 'annual',
-          isShortShift: editingShift.isShortShift || false,
-          time: editingShift.time || '',
-          location: editingShift.location || '',
-          notes: editingShift.notes || '',
-          eventName: editingShift.eventName || '',
-          date: editingShift.date || ''
+            type: editingShift.type || modalType,
+            shiftType: editingShift.shiftType || 'day',
+            leaveType: editingShift.leaveType || 'annual',
+            isShortShift: editingShift.isShortShift || false,
+            time: editingShift.time || '',
+            location: editingShift.location || '',
+            eventName: editingShift.eventName || '',
+            date: editingShift.date || ''
         };
-      }
-      return {
+        }
+        return {
         type: modalType,
         shiftType: 'day',
         leaveType: 'annual',
         isShortShift: false,
         time: '',
         location: '',
-        notes: '',
         eventName: '',
         date: ''
-      };
+        };
     });
 
     const handleSubmit = async (e) => {
-      e.preventDefault();
-      
-      if (!formData.date) {
+        e.preventDefault();
+        
+        if (!formData.date) {
         alert('Please select a date');
         return;
-      }
+        }
 
-      const shiftData = {
+        const shiftData = {
         type: formData.type,
         ...(formData.type === 'shift' ? {
-          shiftType: formData.shiftType,
-          isShortShift: formData.isShortShift
+            shiftType: formData.shiftType,
+            isShortShift: formData.isShortShift
         } : {
-          leaveType: formData.leaveType,
-          ...(formData.eventName && { eventName: formData.eventName })
-        }),
-        ...(formData.time && { time: formData.time }),
-        ...(formData.location && { location: formData.location }),
-        ...(formData.notes && { notes: formData.notes })
-      };
+            leaveType: formData.leaveType,
+            ...(formData.eventName && { eventName: formData.eventName }),
+            ...(formData.time && { time: formData.time }),
+            ...(formData.location && { location: formData.location })
+        })
+        };
 
-      if (isTransfer) {
+        if (isTransfer) {
         await transferShift(editingShift.transferFrom, formData.date, shiftData);
-      } else {
+        } else {
         await addOrUpdateShift(formData.date, shiftData);
-      }
-      
-      setShowModal(false);
-      setEditingShift(null);
-      if (currentView === 'day') {
+        }
+        
+        setShowModal(false);
+        setEditingShift(null);
+        if (currentView === 'day') {
         setCurrentView('month');
-      }
+        }
     };
 
+    // Check if additional fields are needed
+    const needsDetails = formData.type === 'leave' && 
+                        (formData.leaveType === 'training' || formData.leaveType === 'preceptorship');
+
     return (
-      <div style={{
+        <div style={{
         position: 'fixed',
         top: 0,
         left: 0,
@@ -1059,449 +1062,372 @@ const NHSShiftTracker = () => {
         padding: window.innerWidth < 600 ? '0' : '16px',
         backdropFilter: 'blur(8px)',
         overflowY: 'auto'
-      }}
-      onClick={(e) => {
+        }}
+        onClick={(e) => {
         if (e.target === e.currentTarget) {
-          setShowModal(false);
-          setEditingShift(null);
+            setShowModal(false);
+            setEditingShift(null);
         }
-      }}>
-        <div style={{
-          background: COLORS.cardBg,
-          borderRadius: window.innerWidth < 600 ? '32px 32px 0 0' : '32px',
-          padding: 'clamp(24px, 6vw, 32px)',
-          maxWidth: '500px',
-          width: '100%',
-          maxHeight: window.innerWidth < 600 ? '92vh' : '90vh',
-          overflowY: 'auto',
-          boxShadow: `0 20px 60px rgba(0,0,0,0.3)`,
-          animation: window.innerWidth < 600 ? 'modalSlideUp 0.3s ease-out' : 'modalSlideIn 0.3s ease-out'
         }}>
-          {/* Modal Header */}
-          <div style={{
+        <div style={{
+            background: COLORS.cardBg,
+            borderRadius: window.innerWidth < 600 ? '32px 32px 0 0' : '32px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: window.innerWidth < 600 ? '92vh' : '90vh',
+            overflowY: 'auto',
+            boxShadow: `0 20px 60px rgba(0,0,0,0.3)`,
+            animation: window.innerWidth < 600 ? 'modalSlideUp 0.3s ease-out' : 'modalSlideIn 0.3s ease-out'
+        }}>
+            {/* Header */}
+            <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 'clamp(20px, 5vw, 24px)'
-          }}>
+            marginBottom: '20px'
+            }}>
             <div>
-              <h2 style={{
-                fontSize: 'clamp(22px, 5.5vw, 26px)',
+                <h2 style={{
+                fontSize: '22px',
                 fontWeight: '700',
                 color: COLORS.textDark,
-                margin: '0 0 4px 0',
+                margin: '0',
                 fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
-              }}>
-                {isTransfer ? 'Transfer' : editingShift?.date && !isTransfer ? 'Edit' : 'Add'} {modalType === 'shift' ? 'Shift' : 'Leave'}
-              </h2>
-              {isTransfer && (
-                <div style={{
-                  fontSize: 'clamp(12px, 3vw, 13px)',
-                  color: COLORS.textMuted,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginTop: '4px'
                 }}>
-                  <AlertCircle size={14} />
-                  You can modify details during transfer
-                </div>
-              )}
+                {isTransfer ? 'Transfer' : editingShift?.date && !isTransfer ? 'Edit' : 'Add'} {modalType === 'shift' ? 'Shift' : 'Leave'}
+                </h2>
             </div>
             <button
-              onClick={() => {
+                onClick={() => {
                 setShowModal(false);
                 setEditingShift(null);
-              }}
-              style={{
-                width: '40px',
-                height: '40px',
-                background: `${COLORS.border}`,
+                }}
+                style={{
+                width: '36px',
+                height: '36px',
+                background: COLORS.border,
                 border: 'none',
                 cursor: 'pointer',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'all 0.2s ease',
                 flexShrink: 0
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = `${COLORS.danger}20`}
-              onMouseLeave={(e) => e.currentTarget.style.background = COLORS.border}
+                }}
             >
-              <X size={20} color={COLORS.textDark} />
+                <X size={18} color={COLORS.textDark} />
             </button>
-          </div>
+            </div>
 
-          <form onSubmit={handleSubmit}>
-            {/* Date Input */}
-            <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-              <label style={{
+            <form onSubmit={handleSubmit}>
+            {/* Date */}
+            <div style={{ marginBottom: '16px' }}>
+                <label style={{
                 display: 'block',
                 marginBottom: '8px',
-                fontSize: 'clamp(13px, 3.2vw, 14px)',
+                fontSize: '13px',
                 fontWeight: '700',
-                color: COLORS.textDark,
-                letterSpacing: '0.3px'
-              }}>
+                color: COLORS.textDark
+                }}>
                 Date *
-              </label>
-              <input
+                </label>
+                <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
                 style={{
-                  width: '100%',
-                  padding: 'clamp(14px, 3.5vw, 16px)',
-                  borderRadius: '16px',
-                  border: `2px solid ${COLORS.border}`,
-                  fontSize: 'clamp(14px, 3.5vw, 15px)',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'inherit',
-                  background: COLORS.cardBg,
-                  color: COLORS.textDark,
-                  fontWeight: '500'
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '14px',
+                    border: `2px solid ${COLORS.border}`,
+                    fontSize: '16px',
+                    transition: 'all 0.2s ease',
+                    fontFamily: 'inherit',
+                    background: COLORS.cardBg,
+                    color: COLORS.textDark
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.primary;
-                  e.currentTarget.style.boxShadow = `0 0 0 4px ${COLORS.primary}15`;
+                    e.currentTarget.style.borderColor = COLORS.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${COLORS.primary}15`;
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.border;
-                  e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = COLORS.border;
+                    e.currentTarget.style.boxShadow = 'none';
                 }}
-              />
+                />
             </div>
 
             {modalType === 'shift' ? (
-              <>
+                <>
                 {/* Shift Type */}
-                <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-                  <label style={{
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={{
                     display: 'block',
-                    marginBottom: '12px',
-                    fontSize: 'clamp(13px, 3.2vw, 14px)',
+                    marginBottom: '10px',
+                    fontSize: '13px',
                     fontWeight: '700',
-                    color: COLORS.textDark,
-                    letterSpacing: '0.3px'
-                  }}>
+                    color: COLORS.textDark
+                    }}>
                     Shift Type *
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                     {[
-                      { value: 'day', label: 'Day', color: COLORS.dayShift },
-                      { value: 'night', label: 'Night', color: COLORS.nightShift },
-                      { value: 'twilight', label: 'Twilight', color: COLORS.twilightShift }
+                        { value: 'day', label: 'Day', color: COLORS.dayShift },
+                        { value: 'night', label: 'Night', color: COLORS.nightShift },
+                        { value: 'twilight', label: 'Twilight', color: COLORS.twilightShift }
                     ].map((type) => (
-                      <button
+                        <button
                         key={type.value}
                         type="button"
                         onClick={() => setFormData({ ...formData, shiftType: type.value })}
                         style={{
-                          padding: 'clamp(14px, 3.5vw, 16px)',
-                          background: formData.shiftType === type.value ? type.color : COLORS.cardBg,
-                          color: formData.shiftType === type.value ? '#FFFFFF' : COLORS.textDark,
-                          border: `2px solid ${formData.shiftType === type.value ? type.color : COLORS.border}`,
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          fontWeight: '700',
-                          fontSize: 'clamp(13px, 3.2vw, 14px)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s ease',
-                          boxShadow: formData.shiftType === type.value ? `0 4px 12px ${type.color}40` : 'none'
+                            padding: '12px 8px',
+                            background: formData.shiftType === type.value ? type.color : COLORS.cardBg,
+                            color: formData.shiftType === type.value ? '#FFFFFF' : COLORS.textDark,
+                            border: `2px solid ${formData.shiftType === type.value ? type.color : COLORS.border}`,
+                            borderRadius: '14px',
+                            cursor: 'pointer',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: formData.shiftType === type.value ? `0 3px 10px ${type.color}40` : 'none'
                         }}
-                      >
-                        <ShiftIcon type={type.value} size={20} />
+                        >
+                        <ShiftIcon type={type.value} size={18} />
                         {type.label}
-                      </button>
+                        </button>
                     ))}
-                  </div>
+                    </div>
                 </div>
 
-                {/* Short Shift Toggle */}
-                <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-                  <label style={{
+                {/* Short Shift */}
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
                     cursor: 'pointer',
-                    padding: '16px',
-                    borderRadius: '16px',
+                    padding: '14px',
+                    borderRadius: '14px',
                     background: formData.isShortShift ? `${COLORS.shortShift}15` : `${COLORS.border}80`,
                     border: `2px solid ${formData.isShortShift ? COLORS.shortShift : 'transparent'}`,
                     transition: 'all 0.2s ease'
-                  }}>
+                    }}>
                     <input
-                      type="checkbox"
-                      checked={formData.isShortShift}
-                      onChange={(e) => setFormData({ ...formData, isShortShift: e.target.checked })}
-                      style={{
-                        width: '22px',
-                        height: '22px',
+                        type="checkbox"
+                        checked={formData.isShortShift}
+                        onChange={(e) => setFormData({ ...formData, isShortShift: e.target.checked })}
+                        style={{
+                        width: '20px',
+                        height: '20px',
                         cursor: 'pointer',
                         accentColor: COLORS.shortShift,
                         flexShrink: 0
-                      }}
+                        }}
                     />
-                    <div style={{ flex: 1 }}>
-                      <span style={{
-                        fontSize: 'clamp(14px, 3.5vw, 15px)',
+                    <span style={{
+                        fontSize: '14px',
                         fontWeight: '700',
-                        color: COLORS.textDark,
-                        display: 'block',
-                        marginBottom: '2px'
-                      }}>
+                        color: COLORS.textDark
+                    }}>
                         Short Shift
-                      </span>
-                      <span style={{
-                        fontSize: 'clamp(12px, 3vw, 13px)',
-                        color: COLORS.textMuted,
-                        fontWeight: '500'
-                      }}>
-                        Mark as a shorter than normal shift
-                      </span>
-                    </div>
-                  </label>
+                    </span>
+                    </label>
                 </div>
-              </>
+                </>
             ) : (
-              <>
+                <>
                 {/* Leave Type */}
-                <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-                  <label style={{
+                <div style={{ marginBottom: needsDetails ? '16px' : '20px' }}>
+                    <label style={{
                     display: 'block',
-                    marginBottom: '12px',
-                    fontSize: 'clamp(13px, 3.2vw, 14px)',
+                    marginBottom: '10px',
+                    fontSize: '13px',
                     fontWeight: '700',
-                    color: COLORS.textDark,
-                    letterSpacing: '0.3px'
-                  }}>
+                    color: COLORS.textDark
+                    }}>
                     Leave Type *
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                     {[
-                      { value: 'annual', label: 'Annual Leave', color: COLORS.annualLeave },
-                      { value: 'sick', label: 'Sick Leave', color: COLORS.sickLeave },
-                      { value: 'training', label: 'Training', color: COLORS.training },
-                      { value: 'preceptorship', label: 'Preceptorship', color: COLORS.preceptorship }
+                        { value: 'annual', label: 'Annual Leave', color: COLORS.annualLeave },
+                        { value: 'sick', label: 'Sick Leave', color: COLORS.sickLeave },
+                        { value: 'training', label: 'Training', color: COLORS.training },
+                        { value: 'preceptorship', label: 'Preceptorship', color: COLORS.preceptorship }
                     ].map((type) => (
-                      <button
+                        <button
                         key={type.value}
                         type="button"
                         onClick={() => setFormData({ ...formData, leaveType: type.value })}
                         style={{
-                          padding: 'clamp(14px, 3.5vw, 16px)',
-                          background: formData.leaveType === type.value ? type.color : COLORS.cardBg,
-                          color: formData.leaveType === type.value ? '#FFFFFF' : COLORS.textDark,
-                          border: `2px solid ${formData.leaveType === type.value ? type.color : COLORS.border}`,
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          fontWeight: '700',
-                          fontSize: 'clamp(13px, 3.2vw, 14px)',
-                          transition: 'all 0.2s ease',
-                          boxShadow: formData.leaveType === type.value ? `0 4px 12px ${type.color}40` : 'none'
+                            padding: '12px 10px',
+                            background: formData.leaveType === type.value ? type.color : COLORS.cardBg,
+                            color: formData.leaveType === type.value ? '#FFFFFF' : COLORS.textDark,
+                            border: `2px solid ${formData.leaveType === type.value ? type.color : COLORS.border}`,
+                            borderRadius: '14px',
+                            cursor: 'pointer',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: formData.leaveType === type.value ? `0 3px 10px ${type.color}40` : 'none'
                         }}
-                      >
+                        >
                         {type.label}
-                      </button>
+                        </button>
                     ))}
-                  </div>
+                    </div>
                 </div>
 
-                {/* Event Name */}
-                <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontSize: 'clamp(13px, 3.2vw, 14px)',
-                    fontWeight: '700',
-                    color: COLORS.textDark,
-                    letterSpacing: '0.3px'
-                  }}>
-                    Event/Course Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.eventName}
-                    onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
-                    placeholder="e.g., Advanced Life Support Course"
-                    style={{
-                      width: '100%',
-                      padding: 'clamp(14px, 3.5vw, 16px)',
-                      borderRadius: '16px',
-                      border: `2px solid ${COLORS.border}`,
-                      fontSize: 'clamp(14px, 3.5vw, 15px)',
-                      transition: 'all 0.2s ease',
-                      fontFamily: 'inherit'
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = COLORS.primary;
-                      e.currentTarget.style.boxShadow = `0 0 0 4px ${COLORS.primary}15`;
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = COLORS.border;
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  />
-                </div>
-              </>
+                {/* Only show these for Training/Preceptorship */}
+                {needsDetails && (
+                    <>
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: COLORS.textDark
+                        }}>
+                        Course/Event Name *
+                        </label>
+                        <input
+                        type="text"
+                        value={formData.eventName}
+                        onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
+                        placeholder="e.g., Life Support Course"
+                        required
+                        style={{
+                            width: '100%',
+                            padding: '14px',
+                            borderRadius: '14px',
+                            border: `2px solid ${COLORS.border}`,
+                            fontSize: '16px',
+                            transition: 'all 0.2s ease',
+                            fontFamily: 'inherit'
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = COLORS.primary;
+                            e.currentTarget.style.boxShadow = `0 0 0 3px ${COLORS.primary}15`;
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = COLORS.border;
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: COLORS.textDark
+                        }}>
+                        Time
+                        </label>
+                        <input
+                        type="text"
+                        value={formData.time}
+                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                        placeholder="e.g., 09:00 - 17:00"
+                        style={{
+                            width: '100%',
+                            padding: '14px',
+                            borderRadius: '14px',
+                            border: `2px solid ${COLORS.border}`,
+                            fontSize: '16px',
+                            transition: 'all 0.2s ease',
+                            fontFamily: 'inherit'
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = COLORS.primary;
+                            e.currentTarget.style.boxShadow = `0 0 0 3px ${COLORS.primary}15`;
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = COLORS.border;
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: COLORS.textDark
+                        }}>
+                        Location
+                        </label>
+                        <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="e.g., Training Room A"
+                        style={{
+                            width: '100%',
+                            padding: '14px',
+                            borderRadius: '14px',
+                            border: `2px solid ${COLORS.border}`,
+                            fontSize: '16px',
+                            transition: 'all 0.2s ease',
+                            fontFamily: 'inherit'
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = COLORS.primary;
+                            e.currentTarget.style.boxShadow = `0 0 0 3px ${COLORS.primary}15`;
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = COLORS.border;
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        />
+                    </div>
+                    </>
+                )}
+                </>
             )}
 
-            {/* Time */}
-            <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: 'clamp(13px, 3.2vw, 14px)',
-                fontWeight: '700',
-                color: COLORS.textDark,
-                letterSpacing: '0.3px'
-              }}>
-                Time
-              </label>
-              <input
-                type="text"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                placeholder="e.g., 07:00 - 19:00"
-                style={{
-                  width: '100%',
-                  padding: 'clamp(14px, 3.5vw, 16px)',
-                  borderRadius: '16px',
-                  border: `2px solid ${COLORS.border}`,
-                  fontSize: 'clamp(14px, 3.5vw, 15px)',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'inherit'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.primary;
-                  e.currentTarget.style.boxShadow = `0 0 0 4px ${COLORS.primary}15`;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.border;
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-
-            {/* Location */}
-            <div style={{ marginBottom: 'clamp(16px, 4vw, 20px)' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: 'clamp(13px, 3.2vw, 14px)',
-                fontWeight: '700',
-                color: COLORS.textDark,
-                letterSpacing: '0.3px'
-              }}>
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="e.g., Ward A3, Main Hospital"
-                style={{
-                  width: '100%',
-                  padding: 'clamp(14px, 3.5vw, 16px)',
-                  borderRadius: '16px',
-                  border: `2px solid ${COLORS.border}`,
-                  fontSize: 'clamp(14px, 3.5vw, 15px)',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'inherit'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.primary;
-                  e.currentTarget.style.boxShadow = `0 0 0 4px ${COLORS.primary}15`;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.border;
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-
-            {/* Notes */}
-            <div style={{ marginBottom: 'clamp(20px, 5vw, 24px)' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: 'clamp(13px, 3.2vw, 14px)',
-                fontWeight: '700',
-                color: COLORS.textDark,
-                letterSpacing: '0.3px'
-              }}>
-                Additional Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Add any additional notes or reminders..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: 'clamp(14px, 3.5vw, 16px)',
-                  borderRadius: '16px',
-                  border: `2px solid ${COLORS.border}`,
-                  fontSize: 'clamp(14px, 3.5vw, 15px)',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'inherit',
-                  resize: 'vertical',
-                  lineHeight: '1.5'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.primary;
-                  e.currentTarget.style.boxShadow = `0 0 0 4px ${COLORS.primary}15`;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = COLORS.border;
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-
-            {/* Action Buttons */}
+            {/* Save Button */}
             <button
-              type="submit"
-              style={{
+                type="submit"
+                style={{
                 width: '100%',
-                padding: 'clamp(16px, 4vw, 18px)',
+                padding: '16px',
                 background: COLORS.gradient3,
                 color: '#FFFFFF',
                 border: 'none',
-                borderRadius: '16px',
+                borderRadius: '14px',
                 cursor: 'pointer',
                 fontWeight: '700',
-                fontSize: 'clamp(15px, 3.8vw, 16px)',
+                fontSize: '16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.2s ease',
-                boxShadow: `0 8px 24px ${COLORS.primary}30`,
-                letterSpacing: '0.3px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = `0 12px 32px ${COLORS.primary}40`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = `0 8px 24px ${COLORS.primary}30`;
-              }}
+                boxShadow: `0 6px 20px ${COLORS.primary}30`,
+                touchAction: 'manipulation'
+                }}
             >
-              <Save size={18} />
-              {isTransfer ? 'Transfer Shift' : 'Save Shift'}
+                <Save size={18} />
+                {isTransfer ? 'Transfer' : 'Save'}
             </button>
-          </form>
+            </form>
         </div>
-      </div>
+        </div>
     );
-  };
+    };
 
   // Floating Action Buttons
   const FloatingActions = () => (
