@@ -6,12 +6,11 @@ import {
   getDoc, 
   getDocs, 
   deleteDoc, 
-  query, 
-  where,
-  orderBy,
   onSnapshot 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+
+
 
 /**
  * Shift Service for Firebase Firestore operations
