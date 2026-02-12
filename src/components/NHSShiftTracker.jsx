@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, Save, ArrowRight, Clock, MapPin, FileText, Moon, Sun, Sunset, Calendar, User } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, Save, ArrowRight, Clock, MapPin, FileText, Moon, Sun, Sunset, Calendar, User } from 'lucide-react';
 import { shiftService } from '../services/shiftService';
 
 // Modern Color Palette - More vibrant and friendly
@@ -17,7 +17,7 @@ const COLORS = {
   
   // Shift colors
   dayShift: '#FFB74D',
-  nightShift: '#9575CD',
+  nightShift: '#5c5c5c',
   twilightShift: '#FF6B9D',
   shortShift: '#4DB6AC',
   
@@ -51,27 +51,218 @@ const NHSShiftTracker = () => {
   const [editingShift, setEditingShift] = useState(null);
   const [transferMode, setTransferMode] = useState(false);
   const [transferSource, setTransferSource] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     const loadShifts = async () => {
-      try {
-        const result = await shiftService.getAllShifts();
+        try {
+        
+        const loadPromise = shiftService.getAllShifts();
+        const minTimePromise = new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const [result] = await Promise.all([loadPromise, minTimePromise]);
+        
         if (result.success && result.data) {
-          setShifts(result.data);
+            setShifts(result.data);
         }
-      } catch (error) {
+        } catch (error) {
         console.error('Error loading shifts:', error);
-      }
+        } finally {
+        setLoading(false);
+        }
     };
     
     loadShifts();
 
     const unsubscribe = shiftService.subscribeToShifts((updatedShifts) => {
-      setShifts(updatedShifts);
+        setShifts(updatedShifts);
     });
 
     return () => unsubscribe();
   }, []);
+
+  const LoadingScreen = () => (
+    <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: COLORS.gradient1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+    }}>
+        <div style={{
+        animation: 'pulse 1.5s ease-in-out infinite'
+        }}>
+        <Calendar size={64} color="#FFFFFF" strokeWidth={2} />
+        </div>
+        <div style={{
+        marginTop: '24px',
+        fontSize: '28px',
+        fontWeight: '700',
+        color: '#FFFFFF',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        letterSpacing: '-0.5px'
+        }}>
+        NHS Shift Tracker
+        </div>
+        <div style={{
+        marginTop: '12px',
+        fontSize: '16px',
+        color: 'rgba(255,255,255,0.9)',
+        fontWeight: '500'
+        }}>
+        Loading your schedule...
+        </div>
+        <div style={{
+        marginTop: '32px',
+        width: '200px',
+        height: '4px',
+        background: 'rgba(255,255,255,0.2)',
+        borderRadius: '2px',
+        overflow: 'hidden'
+        }}>
+        <div style={{
+            width: '50%',
+            height: '100%',
+            background: '#FFFFFF',
+            borderRadius: '2px',
+            animation: 'slide 1.5s ease-in-out infinite'
+        }} />
+        </div>
+    </div>
+  );
+
+  const DeleteModal = () => (
+    <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '16px',
+        backdropFilter: 'blur(8px)',
+        animation: 'fadeIn 0.2s ease-out'
+    }}>
+        <div style={{
+        background: COLORS.cardBg,
+        borderRadius: '24px',
+        padding: '28px',
+        maxWidth: '400px',
+        width: '100%',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        animation: 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        }}>
+        <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            background: `${COLORS.danger}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px'
+        }}>
+            <AlertCircle size={32} color={COLORS.danger} />
+        </div>
+        
+        <h3 style={{
+            fontSize: '22px',
+            fontWeight: '700',
+            color: COLORS.textDark,
+            textAlign: 'center',
+            margin: '0 0 12px 0',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+        }}>
+            Delete Shift?
+        </h3>
+        
+        <p style={{
+            fontSize: '15px',
+            color: COLORS.textMuted,
+            textAlign: 'center',
+            margin: '0 0 24px 0',
+            lineHeight: '1.5'
+        }}>
+            Are you sure you want to delete this shift? This action cannot be undone.
+        </p>
+        
+        <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+            onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteTarget(null);
+            }}
+            style={{
+                flex: 1,
+                padding: '14px',
+                background: COLORS.cardBg,
+                color: COLORS.textDark,
+                border: `2px solid ${COLORS.border}`,
+                borderRadius: '14px',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '15px',
+                transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                fontFamily: 'inherit'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = COLORS.border}
+            onMouseLeave={(e) => e.currentTarget.style.background = COLORS.cardBg}
+            >
+            Cancel
+            </button>
+            <button
+            onClick={async () => {
+                if (deleteTarget) {
+                await deleteShift(deleteTarget.date);
+                if (deleteTarget.returnToMonth) {
+                    setCurrentView('month');
+                    setSelectedDate(null);
+                }
+                }
+                setShowDeleteModal(false);
+                setDeleteTarget(null);
+            }}
+            style={{
+                flex: 1,
+                padding: '14px',
+                background: COLORS.gradient2,
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '14px',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '15px',
+                boxShadow: `0 4px 16px ${COLORS.danger}30`,
+                transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                fontFamily: 'inherit'
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = `0 8px 24px ${COLORS.danger}40`;
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = `0 4px 16px ${COLORS.danger}30`;
+            }}
+            >
+            Delete
+            </button>
+        </div>
+        </div>
+    </div>
+  );
 
   const saveShift = async (dateStr, shiftData) => {
     try {
@@ -94,7 +285,11 @@ const NHSShiftTracker = () => {
   ];
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+  const getFirstDayOfMonth = (year, month) => {
+  const day = new Date(year, month, 1).getDay();
+  // ✅ MONDAY START: Convert Sunday (0) to 6, shift Monday (1) to 0
+  return day === 0 ? 6 : day - 1;
+};
   const formatDate = (year, month, day) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   const getShiftForDate = (dateStr) => shifts[dateStr] || null;
 
@@ -189,13 +384,27 @@ const NHSShiftTracker = () => {
     return shift.isShortShift ? `Short ${typeLabel}` : typeLabel;
   };
 
-  // Modern Header Component
+
   const Header = () => {
+
     const today = new Date();
-    const greeting = today.getHours() < 12 ? 'Good Morning' : today.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
+    const ukDate = today.toLocaleDateString('en-GB', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric',
+        timeZone: 'Europe/London'
+    });
+    
+    const hour = parseInt(today.toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        hour12: false,
+        timeZone: 'Europe/London'
+    }));
+    
+    const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
     
     return (
-      <div style={{
+        <div style={{
         background: COLORS.gradient1,
         borderRadius: '0 0 32px 32px',
         padding: 'clamp(24px, 6vw, 32px) clamp(16px, 4vw, 24px)',
@@ -203,102 +412,88 @@ const NHSShiftTracker = () => {
         boxShadow: `0 8px 24px ${COLORS.shadow}`,
         position: 'relative',
         overflow: 'hidden'
-      }}>
-        {/* Decorative circles */}
+        }}>
         <div style={{
-          position: 'absolute',
-          top: '-40px',
-          right: '-40px',
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.1)',
+            position: 'absolute',
+            top: '-40px',
+            right: '-40px',
+            width: '120px',
+            height: '120px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)',
         }} />
         <div style={{
-          position: 'absolute',
-          bottom: '-20px',
-          left: '20px',
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.1)',
+            position: 'absolute',
+            bottom: '-20px',
+            left: '20px',
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)',
         }} />
         
+        {/* ✅ REMOVED PROFILE SECTION */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div>
-              <div style={{
-                fontSize: 'clamp(24px, 6vw, 32px)',
-                fontWeight: '700',
-                color: '#FFFFFF',
-                marginBottom: '4px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-              }}>
-                {greeting}!
-              </div>
-              <div style={{
-                fontSize: 'clamp(14px, 3.5vw, 16px)',
-                color: 'rgba(255,255,255,0.9)',
-                fontWeight: '500'
-              }}>
-                {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </div>
+            <div style={{
+            fontSize: 'clamp(24px, 6vw, 32px)',
+            fontWeight: '700',
+            color: '#FFFFFF',
+            marginBottom: '4px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            }}>
+            {greeting}!
             </div>
             <div style={{
-              width: 'clamp(40px, 10vw, 48px)',
-              height: 'clamp(40px, 10vw, 48px)',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              border: '2px solid rgba(255,255,255,0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF'
+            fontSize: 'clamp(14px, 3.5vw, 16px)',
+            color: 'rgba(255,255,255,0.9)',
+            fontWeight: '500'
             }}>
-              <User size={window.innerWidth < 400 ? 20 : 24} />
+            {ukDate}
             </div>
-          </div>
-          
-          {transferMode && (
+            
+            {transferMode && (
             <div style={{
-              marginTop: '16px',
-              padding: '12px 16px',
-              background: 'rgba(255,255,255,0.15)',
-              borderRadius: '16px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+                marginTop: '16px',
+                padding: '12px 16px',
+                background: 'rgba(255,255,255,0.15)',
+                borderRadius: '16px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ArrowRight size={18} color="#FFFFFF" />
                 <span style={{ color: '#FFFFFF', fontSize: '14px', fontWeight: '500' }}>
-                  Select destination date
+                    Select destination date
                 </span>
-              </div>
-              <button
+                </div>
+                <button
                 onClick={() => {
-                  setTransferMode(false);
-                  setTransferSource(null);
+                    setTransferMode(false);
+                    setTransferSource(null);
                 }}
                 style={{
-                  padding: '6px 12px',
-                  background: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#FFFFFF',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
+                    padding: '6px 12px',
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
-              >
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                >
                 Cancel
-              </button>
+                </button>
             </div>
-          )}
+            )}
         </div>
-      </div>
+        </div>
     );
   };
 
@@ -338,7 +533,7 @@ const NHSShiftTracker = () => {
               borderRadius: '20px',
               padding: 'clamp(16px, 4vw, 20px)',
               boxShadow: `0 4px 16px ${COLORS.shadow}`,
-              transition: 'all 0.3s ease',
+              transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
               cursor: 'default',
               position: 'relative',
               overflow: 'hidden'
@@ -424,7 +619,7 @@ const NHSShiftTracker = () => {
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: `0 2px 8px ${COLORS.shadow}`,
-          transition: 'all 0.2s ease'
+          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = COLORS.primary;
@@ -469,7 +664,7 @@ const NHSShiftTracker = () => {
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: `0 2px 8px ${COLORS.shadow}`,
-          transition: 'all 0.2s ease'
+          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = COLORS.primary;
@@ -535,7 +730,7 @@ const NHSShiftTracker = () => {
             background: shift ? getShiftColor(shift) : COLORS.cardBg,
             borderRadius: '16px',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
+            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
             border: isToday ? `3px solid ${COLORS.primary}` : `1px solid ${shift ? 'transparent' : COLORS.border}`,
             position: 'relative',
             display: 'flex',
@@ -604,18 +799,19 @@ const NHSShiftTracker = () => {
           gap: 'clamp(4px, 1vw, 8px)',
           marginBottom: 'clamp(8px, 2vw, 12px)'
         }}>
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
             <div key={idx} style={{
-              textAlign: 'center',
-              fontSize: 'clamp(11px, 2.8vw, 13px)',
-              fontWeight: '700',
-              color: COLORS.textMuted,
-              padding: 'clamp(6px, 1.5vw, 8px)',
-              letterSpacing: '0.5px'
+                textAlign: 'center',
+                fontSize: 'clamp(11px, 2.8vw, 13px)',
+                fontWeight: '700',
+                color: COLORS.textMuted,
+                padding: 'clamp(6px, 1.5vw, 8px)',
+                letterSpacing: '0.5px'
             }}>
-              {day}
+                {day}
             </div>
-          ))}
+           ))}
+
         </div>
         <div style={{
           display: 'grid',
@@ -657,7 +853,7 @@ const NHSShiftTracker = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            transition: 'all 0.2s ease',
+            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
             boxShadow: `0 2px 8px ${COLORS.shadow}`
           }}
           onMouseEnter={(e) => {
@@ -814,7 +1010,7 @@ const NHSShiftTracker = () => {
                   justifyContent: 'center',
                   gap: '8px',
                   boxShadow: `0 4px 12px ${COLORS.shadow}`,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -843,7 +1039,7 @@ const NHSShiftTracker = () => {
                   justifyContent: 'center',
                   gap: '8px',
                   boxShadow: `0 4px 12px ${COLORS.shadow}`,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -874,7 +1070,7 @@ const NHSShiftTracker = () => {
                   justifyContent: 'center',
                   gap: '8px',
                   boxShadow: `0 4px 12px ${COLORS.shadow}`,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -934,7 +1130,7 @@ const NHSShiftTracker = () => {
                   justifyContent: 'center',
                   gap: '8px',
                   boxShadow: `0 4px 12px ${COLORS.shadow}`,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -963,7 +1159,7 @@ const NHSShiftTracker = () => {
                   justifyContent: 'center',
                   gap: '8px',
                   boxShadow: `0 4px 12px ${COLORS.shadow}`,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
@@ -1113,7 +1309,7 @@ const NHSShiftTracker = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 flexShrink: 0
                 }}
             >
@@ -1144,7 +1340,7 @@ const NHSShiftTracker = () => {
                     borderRadius: '14px',
                     border: `2px solid ${COLORS.border}`,
                     fontSize: '16px',
-                    transition: 'all 0.2s ease',
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     fontFamily: 'inherit',
                     background: COLORS.cardBg,
                     color: COLORS.textDark
@@ -1196,7 +1392,7 @@ const NHSShiftTracker = () => {
                             flexDirection: 'column',
                             alignItems: 'center',
                             gap: '6px',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                             boxShadow: formData.shiftType === type.value ? `0 3px 10px ${type.color}40` : 'none'
                         }}
                         >
@@ -1218,7 +1414,7 @@ const NHSShiftTracker = () => {
                     borderRadius: '14px',
                     background: formData.isShortShift ? `${COLORS.shortShift}15` : `${COLORS.border}80`,
                     border: `2px solid ${formData.isShortShift ? COLORS.shortShift : 'transparent'}`,
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}>
                     <input
                         type="checkbox"
@@ -1275,7 +1471,7 @@ const NHSShiftTracker = () => {
                             cursor: 'pointer',
                             fontWeight: '700',
                             fontSize: '13px',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                             boxShadow: formData.leaveType === type.value ? `0 3px 10px ${type.color}40` : 'none'
                         }}
                         >
@@ -1310,7 +1506,7 @@ const NHSShiftTracker = () => {
                             borderRadius: '14px',
                             border: `2px solid ${COLORS.border}`,
                             fontSize: '16px',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                             fontFamily: 'inherit'
                         }}
                         onFocus={(e) => {
@@ -1345,7 +1541,7 @@ const NHSShiftTracker = () => {
                             borderRadius: '14px',
                             border: `2px solid ${COLORS.border}`,
                             fontSize: '16px',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                             fontFamily: 'inherit'
                         }}
                         onFocus={(e) => {
@@ -1380,7 +1576,7 @@ const NHSShiftTracker = () => {
                             borderRadius: '14px',
                             border: `2px solid ${COLORS.border}`,
                             fontSize: '16px',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                             fontFamily: 'inherit'
                         }}
                         onFocus={(e) => {
@@ -1415,7 +1611,7 @@ const NHSShiftTracker = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 boxShadow: `0 6px 20px ${COLORS.primary}30`,
                 touchAction: 'manipulation'
                 }}
@@ -1432,45 +1628,45 @@ const NHSShiftTracker = () => {
   // Floating Action Buttons
   const FloatingActions = () => (
     <div style={{
-      position: 'fixed',
-      bottom: 'clamp(20px, 5vw, 24px)',
-      right: 'clamp(20px, 5vw, 24px)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      zIndex: 100
+        position: 'fixed',
+        bottom: 'clamp(20px, 5vw, 24px)',
+        right: 'clamp(20px, 5vw, 24px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        zIndex: 100
     }}>
-      <button
+        <button
         onClick={() => {
-          setModalType('shift');
-          setEditingShift(null);
-          setShowModal(true);
+            setModalType('shift');
+            setEditingShift(null);
+            setShowModal(true);
         }}
         style={{
-          width: '56px',
-          height: '56px',
-          background: COLORS.gradient3,
-          border: 'none',
-          borderRadius: '50%',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: `0 8px 24px ${COLORS.primary}40`,
-          transition: 'all 0.3s ease',
-          color: '#FFFFFF'
+            width: '56px',
+            height: '56px',
+            background: COLORS.gradient3,
+            border: 'none',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `0 8px 24px ${COLORS.primary}40`,
+            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', 
+            color: '#FFFFFF'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1) rotate(90deg)';
-          e.currentTarget.style.boxShadow = `0 12px 32px ${COLORS.primary}50`;
+            e.currentTarget.style.transform = 'scale(1.15) rotate(90deg)';
+            e.currentTarget.style.boxShadow = `0 12px 32px ${COLORS.primary}50`;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-          e.currentTarget.style.boxShadow = `0 8px 24px ${COLORS.primary}40`;
+            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+            e.currentTarget.style.boxShadow = `0 8px 24px ${COLORS.primary}40`;
         }}
-      >
+        >
         <Plus size={28} strokeWidth={2.5} />
-      </button>
+        </button>
     </div>
   );
 
@@ -1482,6 +1678,7 @@ const NHSShiftTracker = () => {
       overflowX: 'hidden',
       paddingBottom: 'clamp(80px, 20vw, 100px)'
     }}>
+        
       <style>{`
         @keyframes modalSlideIn {
           from {
@@ -1492,6 +1689,32 @@ const NHSShiftTracker = () => {
             opacity: 1;
             transform: translateY(0) scale(1);
           }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        @keyframes slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1);
+            }
         }
         
         @keyframes modalSlideUp {
