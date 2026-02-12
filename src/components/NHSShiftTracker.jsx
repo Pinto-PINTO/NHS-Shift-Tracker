@@ -52,12 +52,23 @@ const NHSShiftTracker = () => {
   const [transferMode, setTransferMode] = useState(false);
   const [transferSource, setTransferSource] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     const loadShifts = async () => {
         try {
+        // Animate progress bar
+        const progressInterval = setInterval(() => {
+            setLoadingProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(progressInterval);
+                    return 100;
+                }
+                return prev + 2;
+            });
+        }, 30);
         
         const loadPromise = shiftService.getAllShifts();
         const minTimePromise = new Promise(resolve => setTimeout(resolve, 1500));
@@ -67,6 +78,9 @@ const NHSShiftTracker = () => {
         if (result.success && result.data) {
             setShifts(result.data);
         }
+        
+        clearInterval(progressInterval);
+        setLoadingProgress(100);
         } catch (error) {
         console.error('Error loading shifts:', error);
         } finally {
@@ -129,12 +143,20 @@ const NHSShiftTracker = () => {
         overflow: 'hidden'
         }}>
         <div style={{
-            width: '50%',
+            width: `${loadingProgress}%`,
             height: '100%',
             background: '#FFFFFF',
             borderRadius: '2px',
-            animation: 'slide 1.5s ease-in-out infinite'
+            transition: 'width 0.3s ease-out'
         }} />
+        </div>
+        <div style={{
+        marginTop: '12px',
+        fontSize: '14px',
+        color: 'rgba(255,255,255,0.8)',
+        fontWeight: '600'
+        }}>
+        {loadingProgress}%
         </div>
     </div>
   );
@@ -1294,7 +1316,7 @@ const NHSShiftTracker = () => {
                 margin: '0',
                 fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
                 }}>
-                {isTransfer ? 'Transfer' : editingShift?.date && !isTransfer ? 'Edit' : 'Add'} {modalType === 'shift' ? 'Shift' : 'Leave'}
+                {isTransfer ? 'Transfer' : editingShift?.date && !isTransfer ? 'Edit' : 'Add'} {formData.type === 'shift' ? 'Shift' : 'Leave'}
                 </h2>
             </div>
             <button
@@ -1321,6 +1343,67 @@ const NHSShiftTracker = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
+            {/* Type Selector - Shift or Leave */}
+            <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                display: 'block',
+                marginBottom: '10px',
+                fontSize: '13px',
+                fontWeight: '700',
+                color: COLORS.textDark
+                }}>
+                Type *
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: 'shift' })}
+                    style={{
+                    padding: '14px',
+                    background: formData.type === 'shift' ? COLORS.gradient3 : COLORS.cardBg,
+                    color: formData.type === 'shift' ? '#FFFFFF' : COLORS.textDark,
+                    border: `2px solid ${formData.type === 'shift' ? 'transparent' : COLORS.border}`,
+                    borderRadius: '14px',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '15px',
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    boxShadow: formData.type === 'shift' ? `0 4px 12px ${COLORS.primary}30` : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                    }}
+                >
+                    <Clock size={18} />
+                    Shift
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: 'leave' })}
+                    style={{
+                    padding: '14px',
+                    background: formData.type === 'leave' ? COLORS.gradient4 : COLORS.cardBg,
+                    color: formData.type === 'leave' ? '#FFFFFF' : COLORS.textDark,
+                    border: `2px solid ${formData.type === 'leave' ? 'transparent' : COLORS.border}`,
+                    borderRadius: '14px',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '15px',
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    boxShadow: formData.type === 'leave' ? `0 4px 12px ${COLORS.success}30` : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                    }}
+                >
+                    <Calendar size={18} />
+                    Leave
+                </button>
+                </div>
+            </div>
+            
             {/* Date */}
             <div style={{ marginBottom: '16px' }}>
                 <label style={{
@@ -1359,7 +1442,7 @@ const NHSShiftTracker = () => {
                 />
             </div>
 
-            {modalType === 'shift' ? (
+            {formData.type === 'shift' ? (
                 <>
                 {/* Shift Type */}
                 <div style={{ marginBottom: '16px' }}>
@@ -1672,6 +1755,14 @@ const NHSShiftTracker = () => {
         </button>
     </div>
   );
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (showDeleteModal) {
+    return <DeleteModal />;
+  }
 
   return (
     <div style={{
