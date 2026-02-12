@@ -693,7 +693,6 @@ const NHSShiftTracker = () => {
         <div 
           key={`empty-${i}`} 
           style={{ 
-            minHeight: 'clamp(60px, 14vw, 75px)',
             aspectRatio: '1'
           }} 
         />
@@ -737,7 +736,6 @@ const NHSShiftTracker = () => {
             flexDirection: 'column',
             justifyContent: 'space-between',
             boxShadow: shift ? `0 4px 12px ${getShiftColor(shift)}40` : `0 2px 8px ${COLORS.shadow}`,
-            minHeight: 'clamp(60px, 14vw, 75px)',
             aspectRatio: '1',
             overflow: 'hidden'
           }}
@@ -792,7 +790,12 @@ const NHSShiftTracker = () => {
     }
 
     return (
-      <div style={{ padding: '0 clamp(16px, 4vw, 24px)' }}>
+      <div style={{ 
+        padding: '0 clamp(16px, 4vw, 24px)',
+        boxSizing: 'border-box',
+        width: '100%',
+        maxWidth: '100%'
+      }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
