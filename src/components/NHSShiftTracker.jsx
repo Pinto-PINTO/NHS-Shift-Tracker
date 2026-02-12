@@ -1074,12 +1074,12 @@ const NHSShiftTracker = () => {
               </button>
 
               <button
-                onClick={async () => {
-                  if (window.confirm('Are you sure you want to delete this shift?')) {
-                    await deleteShift(selectedDate);
-                    setCurrentView('month');
-                    setSelectedDate(null);
-                  }
+                onClick={() => {
+                  setDeleteTarget({ 
+                    date: selectedDate,
+                    returnToMonth: true 
+                  });
+                  setShowDeleteModal(true);
                 }}
                 style={{
                   padding: 'clamp(14px, 3.5vw, 16px)',
@@ -1760,10 +1760,6 @@ const NHSShiftTracker = () => {
     return <LoadingScreen />;
   }
 
-  if (showDeleteModal) {
-    return <DeleteModal />;
-  }
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -1847,6 +1843,7 @@ const NHSShiftTracker = () => {
       </div>
 
       {showModal && <Modal />}
+      {showDeleteModal && <DeleteModal />}
     </div>
   );
 };
