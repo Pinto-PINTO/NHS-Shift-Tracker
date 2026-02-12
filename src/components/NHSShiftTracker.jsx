@@ -51,8 +51,8 @@ const NHSShiftTracker = () => {
   const [editingShift, setEditingShift] = useState(null);
   const [transferMode, setTransferMode] = useState(false);
   const [transferSource, setTransferSource] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // const [loading, setLoading] = useState(true);
+  // const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
