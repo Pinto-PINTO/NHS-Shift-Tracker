@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, Save, ArrowRight, Clock, MapPin, FileText, Moon, Sun, Sunset, Calendar, User } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, Save, ArrowRight, Clock, MapPin, FileText, Moon, Sun, Sunset, Calendar } from 'lucide-react';
 import { shiftService } from '../services/shiftService';
 
 // Modern Color Palette - More vibrant and friendly
