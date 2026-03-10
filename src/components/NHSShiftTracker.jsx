@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, Save, ArrowRight, Clock, MapPin, FileText, Moon, Sun, Sunset, Calendar } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, Save, ArrowRight, Clock, MapPin, FileText, Moon, Sun, Sunset, Calendar, History } from 'lucide-react';
 import { shiftService } from '../services/shiftService';
 
 // Modern Color Palette - More vibrant and friendly
@@ -1104,6 +1104,202 @@ const NHSShiftTracker = () => {
                 Delete
               </button>
             </div>
+
+            {/* Shift History Log */}
+            {shift.history && shift.history.length > 0 && (
+              <div style={{
+                marginTop: 'clamp(20px, 5vw, 28px)',
+                background: COLORS.cardBg,
+                borderRadius: '24px',
+                padding: 'clamp(20px, 5vw, 24px)',
+                boxShadow: `0 4px 16px ${COLORS.shadow}`
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: 'clamp(16px, 4vw, 20px)'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '12px',
+                    background: `${COLORS.purple}15`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: COLORS.purple,
+                    flexShrink: 0
+                  }}>
+                    <History size={18} strokeWidth={2.5} />
+                  </div>
+                  <div style={{
+                    fontSize: 'clamp(15px, 3.8vw, 17px)',
+                    fontWeight: '700',
+                    color: COLORS.textDark
+                  }}>
+                    Change History
+                  </div>
+                  <div style={{
+                    marginLeft: 'auto',
+                    background: `${COLORS.purple}15`,
+                    color: COLORS.purple,
+                    borderRadius: '20px',
+                    padding: '4px 12px',
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    {shift.history.length} {shift.history.length === 1 ? 'entry' : 'entries'}
+                  </div>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  {/* Vertical timeline line */}
+                  <div style={{
+                    position: 'absolute',
+                    left: '15px',
+                    top: '8px',
+                    bottom: '8px',
+                    width: '2px',
+                    background: `${COLORS.border}`,
+                    borderRadius: '1px'
+                  }} />
+
+                  {[...shift.history].reverse().map((entry, idx) => {
+                    const entryDate = new Date(entry.timestamp);
+                    const formattedDate = entryDate.toLocaleDateString('en-GB', {
+                      day: 'numeric', month: 'short', year: 'numeric'
+                    });
+                    const formattedTime = entryDate.toLocaleTimeString('en-GB', {
+                      hour: '2-digit', minute: '2-digit'
+                    });
+
+                    // Pick dot colour based on shift type in this entry
+                    let dotColor = COLORS.primary;
+                    if (entry.type === 'leave') {
+                      const leaveColors = {
+                        sick: COLORS.sickLeave,
+                        annual: COLORS.annualLeave,
+                        training: COLORS.training,
+                        preceptorship: COLORS.preceptorship
+                      };
+                      dotColor = leaveColors[entry.leaveType] || COLORS.textMuted;
+                    } else if (entry.isShortShift) {
+                      dotColor = COLORS.shortShift;
+                    } else {
+                      const shiftColors = {
+                        day: COLORS.dayShift,
+                        night: COLORS.nightShift,
+                        twilight: COLORS.twilightShift
+                      };
+                      dotColor = shiftColors[entry.shiftType] || COLORS.primary;
+                    }
+
+                    const isLatest = idx === 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '16px',
+                          marginBottom: idx < shift.history.length - 1 ? '16px' : '0',
+                          position: 'relative'
+                        }}
+                      >
+                        {/* Timeline dot */}
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: isLatest ? dotColor : `${dotColor}25`,
+                          border: `2px solid ${dotColor}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          zIndex: 1,
+                          boxShadow: isLatest ? `0 4px 12px ${dotColor}40` : 'none'
+                        }}>
+                          {entry.type === 'leave' ? (
+                            <Calendar size={13} color={isLatest ? '#FFFFFF' : dotColor} strokeWidth={2.5} />
+                          ) : entry.shiftType === 'night' ? (
+                            <Moon size={13} color={isLatest ? '#FFFFFF' : dotColor} strokeWidth={2.5} />
+                          ) : entry.shiftType === 'twilight' ? (
+                            <Sunset size={13} color={isLatest ? '#FFFFFF' : dotColor} strokeWidth={2.5} />
+                          ) : (
+                            <Sun size={13} color={isLatest ? '#FFFFFF' : dotColor} strokeWidth={2.5} />
+                          )}
+                        </div>
+
+                        {/* Entry content */}
+                        <div style={{
+                          flex: 1,
+                          background: isLatest ? `${dotColor}10` : COLORS.background,
+                          borderRadius: '16px',
+                          padding: '12px 16px',
+                          border: isLatest ? `1.5px solid ${dotColor}30` : `1.5px solid ${COLORS.border}`
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '4px',
+                            marginBottom: '4px'
+                          }}>
+                            <span style={{
+                              fontSize: 'clamp(13px, 3.2vw, 14px)',
+                              fontWeight: '700',
+                              color: isLatest ? dotColor : COLORS.textDark
+                            }}>
+                              {entry.label}
+                              {isLatest && (
+                                <span style={{
+                                  marginLeft: '8px',
+                                  fontSize: '10px',
+                                  background: dotColor,
+                                  color: '#FFFFFF',
+                                  borderRadius: '8px',
+                                  padding: '2px 7px',
+                                  fontWeight: '700',
+                                  verticalAlign: 'middle'
+                                }}>
+                                  CURRENT
+                                </span>
+                              )}
+                            </span>
+                            <span style={{
+                              fontSize: '11px',
+                              color: COLORS.textMuted,
+                              fontWeight: '600',
+                              background: COLORS.cardBg,
+                              borderRadius: '8px',
+                              padding: '2px 8px',
+                              border: `1px solid ${COLORS.border}`
+                            }}>
+                              {entry.action === 'created' ? '✦ Created' : '✎ Updated'}
+                            </span>
+                          </div>
+                          <div style={{
+                            fontSize: '12px',
+                            color: COLORS.textMuted,
+                            fontWeight: '500',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <Clock size={11} />
+                            {formattedDate} at {formattedTime}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div style={{

@@ -51,7 +51,29 @@ class ShiftService {
   }
 
   /**
-   * Add or update a shift
+   * Build a human-readable label for a shift snapshot
+   * @param {object} shiftData
+   * @returns {string}
+   */
+  buildShiftLabel(shiftData) {
+    if (!shiftData) return 'Unknown';
+    if (shiftData.type === 'leave') {
+      const leaveLabels = {
+        sick: 'Sick Leave',
+        annual: 'Annual Leave',
+        training: 'Training',
+        preceptorship: 'Preceptorship'
+      };
+      return leaveLabels[shiftData.leaveType] || 'Leave';
+    }
+    const typeLabel = shiftData.shiftType
+      ? shiftData.shiftType.charAt(0).toUpperCase() + shiftData.shiftType.slice(1) + ' Shift'
+      : 'Shift';
+    return shiftData.isShortShift ? `Short ${typeLabel}` : typeLabel;
+  }
+
+  /**
+   * Add or update a shift, appending a history log entry on every save
    * @param {string} dateStr - Date in format YYYY-MM-DD
    * @param {object} shiftData - Shift data object
    * @param {string} userId - Optional user ID for multi-user support
@@ -63,16 +85,37 @@ class ShiftService {
       
       // Remove undefined values from shiftData
       const cleanedData = this.removeUndefined(shiftData);
-      
-      const dataToSave = {
-        ...cleanedData,
-        updatedAt: new Date().toISOString()
+
+      // Fetch existing shift to decide createdAt and to build a history entry
+      const existingShift = await this.getShift(dateStr, userId);
+      const isNew = !existingShift.success || !existingShift.data;
+
+      const now = new Date().toISOString();
+
+      // Build the history entry for this save
+      const historyEntry = {
+        timestamp: now,
+        label: this.buildShiftLabel(cleanedData),
+        type: cleanedData.type || null,
+        shiftType: cleanedData.shiftType || null,
+        leaveType: cleanedData.leaveType || null,
+        isShortShift: cleanedData.isShortShift || false,
+        action: isNew ? 'created' : 'updated'
       };
 
-      // Add createdAt only for new shifts
-      const existingShift = await this.getShift(dateStr, userId);
-      if (!existingShift.success || !existingShift.data) {
-        dataToSave.createdAt = new Date().toISOString();
+      // Preserve existing history array and append the new entry
+      const existingHistory = (existingShift.data && Array.isArray(existingShift.data.history))
+        ? existingShift.data.history
+        : [];
+
+      const dataToSave = {
+        ...cleanedData,
+        updatedAt: now,
+        history: [...existingHistory, historyEntry]
+      };
+
+      if (isNew) {
+        dataToSave.createdAt = now;
       }
 
       await setDoc(shiftRef, dataToSave, { merge: true });
